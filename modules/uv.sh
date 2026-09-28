@@ -3,7 +3,10 @@
 # that's the process that reads them. PATH is our job, in shell_uv.
 #
 # INSTALLER_NO_MODIFY_PATH suppresses rc-file PATH edits but NOT the installer
-# receipt, the fish integration, or the env shims — those are removed explicitly.
+# receipt or the fish integration — those are removed explicitly. It does NOT
+# create the env/env.fish shims at all under this flag (verified: a clean
+# install with this flag set produces no such file) — so is_installed_uv must
+# not depend on them existing.
 
 _uv_bin_dir="$HOME/.local/bin"
 _uv_bin="$_uv_bin_dir/uv"
@@ -26,22 +29,14 @@ uninstall_uv() {
     fi
     rm -rf "$HOME/.local/share/uv" "$HOME/.cache/uv" "$HOME/.config/uv"
     rm -f "$_uv_bin" "$_uv_bin_dir/uvx"
-    # Shell shims the installer writes regardless of INSTALLER_NO_MODIFY_PATH.
+    # In case a different install method (not this module) ever left these:
     rm -f "$_uv_bin_dir/env" "$_uv_bin_dir/env.fish"
     rm -f "$HOME/.config/fish/conf.d/uv.env.fish"
-    # Only if we emptied it — fish may be someone else's.
     rmdir "$HOME/.config/fish/conf.d" "$HOME/.config/fish" 2>/dev/null || true
     log "uv removed"
 }
 
-# Also checks the env shim, not just the binary: it's part of this module's
-# own footprint (uninstall_uv explicitly removes it), so if it goes missing
-# independently of the binary, install.sh should notice and repair it rather
-# than silently reporting "already installed" on a half-complete state.
-is_installed_uv() {
-    [ -x "$_uv_bin" ] || return 1
-    [ -f "$_uv_bin_dir/env" ]
-}
+is_installed_uv() { [ -x "$_uv_bin" ]; }
 
 shell_uv() {
     path_prepend "$_uv_bin_dir"
