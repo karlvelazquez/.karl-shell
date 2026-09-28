@@ -16,7 +16,9 @@ install_uv() {
 
 uninstall_uv() {
     if [ -x "$_uv_bin" ]; then
-        "$_uv_bin" cache clean --cache-dir "$HOME/.cache/uv" || true
+        # --force: without it, this blocks indefinitely if another uv
+        # process holds the cache lock, instead of just failing fast.
+        "$_uv_bin" cache clean --force --cache-dir "$HOME/.cache/uv" || true
         _uv_py="$("$_uv_bin" python dir 2>/dev/null || true)"
         _uv_tool="$("$_uv_bin" tool dir 2>/dev/null || true)"
         [ -n "$_uv_py" ]   && [ -d "$_uv_py" ]   && rm -rf "$_uv_py"
@@ -32,7 +34,14 @@ uninstall_uv() {
     log "uv removed"
 }
 
-is_installed_uv() { [ -x "$_uv_bin" ]; }
+# Also checks the env shim, not just the binary: it's part of this module's
+# own footprint (uninstall_uv explicitly removes it), so if it goes missing
+# independently of the binary, install.sh should notice and repair it rather
+# than silently reporting "already installed" on a half-complete state.
+is_installed_uv() {
+    [ -x "$_uv_bin" ] || return 1
+    [ -f "$_uv_bin_dir/env" ]
+}
 
 shell_uv() {
     path_prepend "$_uv_bin_dir"
