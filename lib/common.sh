@@ -7,6 +7,12 @@ KARL_SHELL_END='# <<< karl-shell <<<'
 KARL_SHELL_RC_FILES="$HOME/.bashrc $HOME/.profile"
 KARL_SHELL_SNAPDIR="/tmp/karl-shell.snapshot.$(id -u)"
 
+# Box-specific values (name/email, etc.) that must never be shared across
+# boxes via git. Gitignored; each box has its own copy. Modules that need a
+# value from here fail loudly themselves if it's missing — this line only
+# loads it when present.
+[ -r "$KARL_SHELL_DIR/.env" ] && . "$KARL_SHELL_DIR/.env"
+
 log() { echo "[karl-shell] $*"; }
 err() { echo "[karl-shell] ERROR: $*" >&2; }
 
